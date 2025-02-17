@@ -1,0 +1,17 @@
+#Get Busco gene symbols
+
+#Read the full OrthoDB gene symbols file
+FullOrthoDB <- read.csv("OrthoDB_genes.csv",header=T)
+#Read Actinopterygii Busco genes
+
+OrthoDB_genes <- FullOrthoDB[FullOrthoDB$organism_name=="Danio rerio",]
+
+Acti_Busco_genes <- read.csv("Actino_busco.csv",header=F)
+colnames(Acti_Busco_genes) <- c("pub_og_id","gene_name","link_ODB")
+Merge_data <- merge(Acti_Busco_genes,OrthoDB_genes,by="pub_og_id")
+library(dplyr)
+library(stringr)
+
+#Get unique data
+db_unique <- Merge_data %>% distinct()
+write.csv(db_unique, "Actino_Busco_gene_Symbols.csv")
