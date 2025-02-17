@@ -1,0 +1,118 @@
+#This code slpits the Rabosky multi-gene dataset into single 27 genes and align each gene separately 
+#Read the fish dataset in R
+fish <- read.table("final_alignment.phylip")
+#remove the 1st row with numbers
+fish <- fish[-1,]
+#Assign col names to the dataframe
+colnames(fish) <- c("species_name","seq")
+df <- fish
+
+# Define regions for each gene
+regions <- list(
+  `12s` = c(1, 979),
+  `16s` = c(980, 1756),
+  `4c4` = c(1757, 2291),
+  coi = c(2292, 2973),
+  cytb = c(2974, 4114),
+  enc1 = c(4115, 4954),
+  ficd = c(4955, 5680),
+  glyt = c(5681, 6613),
+  hoxc6a = c(6614, 7243),
+  kiaa1239 = c(7244, 7987),
+  myh6 = c(7988, 8821),
+  nd2 = c(8822, 9868),
+  nd4 = c(9869, 11401),
+  panx2 = c(11402, 12141),
+  plagl2 = c(12142, 12951),
+  ptr = c(12952, 13662),
+  rag1 = c(13663, 15116),
+  rag2 = c(15117, 16340),
+  rhodopsin = c(16341, 17264),
+  ripk4 = c(17265, 17909),
+  sh3px3 = c(17910, 18632),
+  sidkey = c(18633, 19727),
+  sreb2 = c(19728, 20714),
+  svep1 = c(20715, 21521),
+  tbr1 = c(21522, 22349),
+  vcpip = c(22350, 23114),
+  zic1 = c(23115, 24143)
+)
+
+# Function to split sequence into small sequences using regions
+split_sequence <- function(seq, regions) {
+  result <- list()
+  for (gene in names(regions)) {
+    gene_start <- regions[[gene]][1]
+    gene_end <- regions[[gene]][2]
+    split_seq <- substr(seq, start = gene_start, stop = gene_end)
+    result[[gene]] <- split_seq
+  }
+  return(result)
+}
+
+# Split sequences into small sequences using regions
+split_data <- lapply(df$seq, split_sequence, regions = regions)
+
+# Convert split_data to dataframe
+split_df <- as.data.frame(do.call(rbind, split_data))
+
+# Add Species columns to the dataframe
+split_df$species_name <- df$species_name
+# split_df$ID <- seq_len(nrow(df))
+names(split_df)
+#separate dataframes into 27 dataframes
+df_12S <- split_df[,c(1,28)]
+
+# Iterate over each gene column and create a separate dataframe for each gene
+for (i in 1:27) {
+  # Extract the column names of split_df
+  col_name <- paste0("Gene", i)
+  
+  # Create a new dataframe containing the gene sequence column and species column
+  assign(paste0("df_", col_name), split_df[, c(i, 28)])
+}
+
+
+
+#Check the converted dataset
+class(df_Gene1)
+
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene1$"12s")
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+#To take advantage of the DECIPHER calculating the structures and incorporate that info the alignment need RNA sequences
+#for that need replace all Ts with Us (DNA to RNA)
+#Then convert to RNAStringset 
+#Then align with useStructues=TRUE
+#Once aligned, convert back to DNA to use in my multi-gene alignment
+
+# Replace "t" with "u" in the sequences column
+df_2$seq <- gsub("t", "u", df_2$seq, ignore.case = TRUE)
+
+
+library(seqinr)
+
+#Now we have to align the ungapped 12S sequences (3320 sequences)
+install.packages("DECIPHER")
+# load the DECIPHER library in R
+library(DECIPHER)
+
+# Load the Biostrings package
+library(Biostrings)
+# Convert sequences to DNAStringSet object
+sequences <- RNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "F12S.fasta")
