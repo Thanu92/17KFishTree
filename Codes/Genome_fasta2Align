@@ -1,0 +1,319 @@
+#Load packages
+require(tidyverse)
+require(tidyr)
+library(ampir)#to read .faa files in r
+library(dplyr)
+library(Biostrings)
+library(foreach)
+# if (!requireNamespace("BiocManager", quietly=TRUE))
+#  install.packages("BiocManager")
+# BiocManager::install("msa")
+library(msa)
+
+#Read protein fasta files to r downloaded from ncbi
+pro100_1 <- read_faa(file="protein100_1.faa")
+pro100_2 <- read_faa(file="protein100_2.faa")
+pro100_3 <- read_faa(file="protein100_3.faa")
+pro100_4 <- read_faa(file="protein100_4.faa")
+pro100_5 <- read_faa(file="protein100_5.faa")
+pro300_6 <- read_faa(file="protein300_6.faa")
+pro300_7 <- read_faa(file="protein300_7.faa")
+pro300_8 <- read_faa(file="protein300_8.faa")
+pro300_9 <- read_faa(file="protein300_9.faa")
+pro300_10 <- read_faa(file="protein300_10.faa")
+pro300_11 <- read_faa(file="protein300_11.faa")
+pro300_12 <- read_faa(file="protein300_12.faa")
+pro222_13 <- read_faa(file="protein222_13.faa")
+
+gene_filter <- function(protein_set){
+  new <- separate(protein_set, col = seq_name , into = paste0("value",1:11))
+  new1 <- new[,c(4,6,7,10,11,12)]
+  new2 <- new1 %>% 
+    unite(species_name, c("value6", "value7"))
+  colnames(new2)[1] <- "gene"
+  #eaxtract the fiest two columns and combine first two columns in to one, then we can easily remove duplicated rows
+  new_Df <- new2[,c(1:2)]
+  new_Df$Colnew <- apply(new_Df, 1, function(x) paste(na.omit(x), collapse = " "))
+  
+  #Combine the colnew to the new2 dataframe, we need the sequences as well
+  new_df <- cbind(new_Df$Colnew,new2)
+  
+  #remove isofrom X2:4 and keep only isoform X1 sequences
+  df1 <-
+    new_df[!grepl("X2|X3|X4|X5|X6|X7|X8|X9", new_df$value11),]
+  #Get unique rows. we need only isoform x1
+  unique_df <- df1[!duplicated(df1$`new_Df$Colnew`), ]
+  #get a subdataframe
+  gene_species_Df <- unique_df[,c(2,3,6)]
+  
+  #remove rows with gene with LOC^ (coz it's not a gene name)
+  gene_species_Df_new <- gene_species_Df[!grepl('^LOC|^lg|orf|^si$',gene_species_Df$gene),]
+  #bb <- gene_speciec_Df[grepl('^si$',gene_speciec_Df$gene),]
+  #divide dataframes into several dataframe using gene name
+  gene <- gene_species_Df_new %>% group_by(gene)
+  
+  gene_split <- group_split(gene)
+  #Remove dataframes in the list that have only one row
+  gene_split <- gene_split[sapply(gene_split, nrow) > 1]
+  return(gene_split)
+  
+}
+
+
+# alignments100_1 <- alignments
+# fastaFiles100_1 <- fastaFiles
+# filenames100_1 <- filenames
+# aaStringSetList100_1 <- aaStringSetList
+# AlnaaStringSetList100_1 <- AlnaaStringSetList
+# Alnfilenames100_1 <- Alnfilenames
+
+protein100_1_set <- gene_filter(pro100_1)
+protein100_2_set <- gene_filter(pro100_2)
+protein100_3_set <- gene_filter(pro100_3)
+protein100_4_set <- gene_filter(pro100_4)
+protein100_5_set <- gene_filter(pro100_5)
+protein300_6_set <- gene_filter(pro300_6)
+protein300_7_set <- gene_filter(pro300_7)
+protein300_8_set <- gene_filter(pro300_8)
+protein300_9_set <- gene_filter(pro300_9)
+protein300_10_set <- gene_filter(pro300_10)
+protein300_11_set <- gene_filter(pro300_11)
+protein300_12_set <- gene_filter(pro300_12)
+protein222_13_set <- gene_filter(pro222_13)
+
+#Read protein fasta files to r downloaded from ncbi
+pro100_1 <- read_faa(file="protein100_1.faa")
+new <- separate(pro100_1, col = seq_name , into = paste0("value",1:11))
+new1 <- new[,c(4,6,7,10,11,12)]
+
+#now species name is in two columns as genus nmae and species name. So, combine two columns togther
+new2 <- new1 %>%
+  unite(species_name, c("value6", "value7"))
+colnames(new2)[1] <- "gene"
+
+#eaxtract the fiest two columns and combine first two columns in to one, then we can easily remove duplicated rows
+new_Df <- new2[,c(1:2)]
+new_Df$Colnew <- apply(new_Df, 1, function(x) paste(na.omit(x), collapse = " "))
+
+#Combine the colnew to the new2 dataframe, we need the sequences as well
+new_df <- cbind(new_Df$Colnew,new2)
+names(new_df)
+#remove isofrom X2:4 and keep only isoform X1 sequences
+df1 <-
+  new_df[!grepl("X2|X3|X4|X5|X6|X7|X8|X9", new_df$value11),]
+#Get unique rows. we need only isoform x1
+unique_df <- df1[!duplicated(df1$`new_Df$Colnew`), ]
+
+#get a subdataframe
+gene_speciec_Df <- unique_df[,c(2,3,6)]
+
+#remove rows with gene with LOC^ (coz it's not a gene name)
+gene_speciec_Df_new <- gene_speciec_Df[!grepl('^LOC|^lg|orf|^si$',gene_speciec_Df$gene),]
+
+#divide dataframes into several dataframe using gene name
+gene <- gene_speciec_Df_new %>% group_by(gene)
+
+gene_split <- group_split(gene)
+#Remove dataframes in the list that have only one row
+gene_split <- gene_split[sapply(gene_split, nrow) > 1]
+#protein100_2_set_new <- protein100_2_set[sapply(protein100_2_set, nrow) > 1]
+#### Matts Code
+
+#This step is to get individual dataframes from the list of dataframes
+
+# Commenting this part out for now
+# list2env(setNames(gene_split,paste0("newdf",seq_along(gene_split))),envir = .GlobalEnv)
+
+# Instead we could do this
+#gene_split <- protein100_2_set
+# first for each df, I will concatenate gene with species name using paste for the header info foreach fasta file
+gene_split <- foreach(i=1:length(gene_split)) %do% {
+  gene_split[[i]] %>% mutate(header = paste0(gene_split[[i]]$gene, ";", gene_split[[i]]$species_name, sep=""))
+}
+
+# Then we can just create a new directory for the fasta files
+dir <- "fastaFiles"
+dir.create(dir, showWarnings = FALSE)
+
+# Convert each dataframe to aaStringSet format
+aaStringSetList <- foreach(i=1:length(gene_split)) %do% { AAStringSet(x = as.character(gene_split[[i]]$seq_aa)) }
+
+# Name each AAStringSet
+foreach(i=1:length(gene_split)) %do% { aaStringSetList[[i]]@ranges@NAMES <- as.character(gene_split[[i]]$header) }
+
+# Create filenames for each fasta, can name by gene name
+filenames <- foreach(i=1:length(gene_split)) %do% { paste0(dir, "/", gene_split[[i]]$gene[1], ".fas", sep="") }
+
+# Then use writeXStringSet to write out each one to a fasta file in the fastaFiles directory
+foreach(i=1:length(gene_split)) %do% writeXStringSet(aaStringSetList[[i]], filenames[[i]], format = "fasta")
+
+# Then to align each one you could do (just using msa package for example)
+
+
+# Grab each fasta file and import back in
+fastaFiles <- foreach(i=1:length(gene_split)) %do% readAAStringSet(filenames[[i]], format = "fasta")
+
+# Perform an msa on each file (may take a while to complete each one)
+# to test it works: alignments <- foreach(i=1:2) %do% msa(fastaFiles[[i]], verbose=TRUE)
+alignments <- foreach(i=1:length(gene_split)) %do% msa(fastaFiles[[i]], verbose=FALSE) # If you want to see the progress for every alignment, set to TRUE
+alignments[[1]]
+#alignments_100_1 <- foreach(i=1:length(gene_split)) %do% msa(fastaFiles[[i]],method =c("Muscle"),type="protein", verbose=FALSE) # If you want to see the progress for every alignment, set to TRUE
+class(alignments[[1]])
+
+# Then we can just create a new directory for the fasta files
+dir <- "AlnfastaFiles"
+dir.create(dir, showWarnings = FALSE)
+# Convert each dataframe to aaStringSet format
+AlnaaStringSetList <- foreach(i=1:length(alignments)) %do% { AAStringSet(x = as.character(alignments[[i]])) }
+
+# Create filenames for each fasta, can name by gene name
+Alnfilenames <- foreach(i=1:length(gene_split)) %do% { paste0(dir, "/", gene_split[[i]]$gene[1], ".fas", sep="") }
+
+# Then use writeXStringSet to write out each one to a fasta file in the fastaFiles directory
+foreach(i=1:length(alignments)) %do% writeXStringSet(AlnaaStringSetList[[i]], Alnfilenames[[i]], format = "fasta")
+# Then use writeXStringSet to write out each one to a fasta file in the fastaFiles directory
+#foreach(i=1:length(alignments)) %do% writeXStringSet(alignments[[i]], Alnfilenames[[i]], format = "fasta")
+
+#Rename as I have 13 large files,
+alignments100_1 <- alignments
+fastaFiles100_1 <- fastaFiles
+filenames100_1 <- filenames
+aaStringSetList100_1 <- aaStringSetList
+AlnaaStringSetList100_1 <- AlnaaStringSetList
+Alnfilenames100_1 <- Alnfilenames
+gene_split <- protein100_2_set
+#Function for msa
+MSA_genes <- function(gene_split){
+#This step is to get individual dataframes from the list of dataframes
+
+# Commenting this part out for now
+# list2env(setNames(gene_split,paste0("newdf",seq_along(gene_split))),envir = .GlobalEnv)
+
+# Instead we could do this
+
+# first for each df, I will concatenate gene with species name using paste for the header info foreach fasta file
+gene_split <- foreach(i=1:length(gene_split)) %do% {
+  gene_split[[i]] %>% mutate(header = paste0(gene_split[[i]]$gene, ";", gene_split[[i]]$species_name, sep=""))
+}
+
+# Then we can just create a new directory for the fasta files
+dir <- "fastaFiles"
+dir.create(dir, showWarnings = FALSE)
+
+# Convert each dataframe to aaStringSet format
+aaStringSetList <- foreach(i=1:length(gene_split)) %do% { AAStringSet(x = as.character(gene_split[[i]]$seq_aa)) }
+
+# Name each AAStringSet
+foreach(i=1:length(gene_split)) %do% { aaStringSetList[[i]]@ranges@NAMES <- as.character(gene_split[[i]]$header) }
+
+# Create filenames for each fasta, can name by gene name
+filenames <- foreach(i=1:length(gene_split)) %do% { paste0(dir, "/", gene_split[[i]]$gene[1], ".fas", sep="") }
+
+# Then use writeXStringSet to write out each one to a fasta file in the fastaFiles directory
+foreach(i=1:length(gene_split)) %do% writeXStringSet(aaStringSetList[[i]], filenames[[i]], format = "fasta")
+
+# Then to align each one you could do (just using msa package for example)
+
+
+# Grab each fasta file and import back in
+fastaFiles <- foreach(i=1:length(gene_split)) %do% readAAStringSet(filenames[[i]], format = "fasta")
+
+# Perform an msa on each file (may take a while to complete each one)
+# to test it works: alignments <- foreach(i=1:2) %do% msa(fastaFiles[[i]], verbose=TRUE)
+alignments <- foreach(i=1:length(gene_split)) %do% msa(fastaFiles[[i]], verbose=FALSE) # If you want to see the progress for every alignment, set to TRUE
+alignments[[1]]
+#alignments_100_1 <- foreach(i=1:length(gene_split)) %do% msa(fastaFiles[[i]],method =c("Muscle"),type="protein", verbose=FALSE) # If you want to see the progress for every alignment, set to TRUE
+class(alignments[[1]])
+
+# Then we can just create a new directory for the fasta files
+dir <- "AlnfastaFiles"
+dir.create(dir, showWarnings = FALSE)
+# Convert each dataframe to aaStringSet format
+AlnaaStringSetList <- foreach(i=1:length(alignments)) %do% { AAStringSet(x = as.character(alignments[[i]])) }
+
+# Create filenames for each fasta, can name by gene name
+Alnfilenames <- foreach(i=1:length(gene_split)) %do% { paste0(dir, "/", gene_split[[i]]$gene[1], ".fas", sep="") }
+
+# Then use writeXStringSet to write out each one to a fasta file in the fastaFiles directory
+foreach(i=1:length(alignments)) %do% writeXStringSet(AlnaaStringSetList[[i]], Alnfilenames[[i]], format = "fasta")
+
+  
+}
+MSA_genes(protein100_2_set)
+MSA_genes(protein100_3_set)
+MSA_genes(protein100_4_set)
+MSA_genes(protein100_5_set) 
+MSA_genes(protein300_6_set) 
+getwd()
+MSA_genes(protein300_7_set)
+MSA_genes(protein300_8_set)
+MSA_genes(protein300_9_set) 
+MSA_genes(protein300_10_set)
+MSA_genes(protein300_11_set)
+MSA_genes(protein300_12_set)
+MSA_genes(protein222_13_set)
+#--------------------------
+library(seqinr)
+#Now we need to concatanate all the genes together
+#First read all the fas fies into r
+#first <- read_faa("abhd14a.fas")
+files <- list.files(path="C:/Genome_GenBank_new/All_AlnfastaFiles",pattern="*.fas",full.names=T,recursive=F)
+fastaList <- foreach(i=1:length(files))%do%read_faa(files[i])
+first <- fastaList[[1]]
+#Convert to a list of dataframes
+
+fastaList_new <- foreach(i=1:length(fastaList))%do%as.data.frame(fastaList[[i]])
+
+library(tidyverse)
+#split the column seq_name using ';' as the separator in to gene and species names.Since, all the dataframes have the same column use lapply,
+fastaList_species_names <- lapply(fastaList_new, tidyr::separate, col = "seq_name", into = c("gene", "species_name"), sep = ";")
+names(fastaList_species_names[[1]])#"gene" "species_name" "seq_aa" 
+check <- fastaList_species_names[[2]]
+class(fastaList_species_names)
+#Since we need the species and aa sequences we get the 2nd and 3rd column 
+fastaList_species_names_new <- lapply(fastaList_species_names , FUN = function(x){x[, c(2:3)]})
+names(fastaList_species_names_new[[1]])
+#Horizontally concatanate the multiple dataframes into a one dataframe using species_name column
+big_df <- Reduce(function(x, y) merge(x, y, by = "species_name", all = TRUE), fastaList_species_names_new)
+
+#In big_df there are unneccesary species that included when downloaded using comandline tool. These are in rows 107 -242
+#Remove these will give the 177 organisms that have genome data we needed
+genome_df <- big_df[-(107:242),]
+
+#get the gene names
+#Since we need the gene column we get the 1st column of fastaList_species_names dataframe
+gene_names <- lapply(fastaList_species_names , FUN = function(x){x[,1]})
+
+# Using lapply to extract the first element from each data frame in the list
+first_elements <- lapply(gene_names, function(x) x[[1]])
+#get the list elements as a vector
+vector_elements <- unlist(first_elements)
+#rename gene names in the dataframe "genome_df" using the vector_elements vector
+
+colnames(genome_df)[2:2638] <- vector_elements
+
+# Function to replace NA values with dashes based on other rows
+replace_na_with_dashes <- function(x) {
+  non_na_values <- x[!is.na(x)]
+  if (length(non_na_values) > 0) {
+    dashes <- paste(rep("-", nchar(non_na_values[1])), collapse = "")
+    x[is.na(x)] <- dashes
+  }
+  return(x)
+}
+
+# Apply the function to selected columns in the dataframe
+cols_to_process <- vector_elements
+genome_df[cols_to_process] <- lapply(genome_df[cols_to_process], function(x) replace_na_with_dashes(x))
+
+#Merge all genes togetehr to have as a genome/multi gene sequence
+genome_df_newSep <- genome_df %>% 
+  unite("Merged","42sp43":"zzz3",sep="")
+#check the 1st row of genome_df_new df,
+genome_df_newSep[1,]
+#Check the number of characters
+sapply(genome_df_newSep,nchar)#2294470
+library(ampir)
+df_to_faa(genome_df_newSep, file = "genome.fasta")
+c <- read.fasta("genome.fasta")
+
