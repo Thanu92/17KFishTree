@@ -1,0 +1,3391 @@
+#This code is to separate the rabosky dataset and then for each single gene align and see low quality sequences and repalce them and also add new sequences and new species to extend single genes datasets.
+library(sqinr)
+
+#Now we have to align the ungapped 12S sequences (3320 sequences)
+#install.packages("DECIPHER")
+# load the DECIPHER library in R
+library(DECIPHER)
+
+# Load the Biostrings package
+library(Biostrings)
+library(tidyr)
+library(dplyr)
+#Read the fish dataset in R
+fish <- read.table("final_alignment.phylip")
+#remove the 1st row with numbers
+fish <- fish[-1,]
+#Assign col names to the dataframe
+colnames(fish) <- c("species_name","seq")
+df <- fish
+
+# Define regions for each gene
+regions <- list(
+  `12s` = c(1, 979),
+  `16s` = c(980, 1756),
+  `4c4` = c(1757, 2291),
+  coi = c(2292, 2973),
+  cytb = c(2974, 4114),
+  enc1 = c(4115, 4954),
+  ficd = c(4955, 5680),
+  glyt = c(5681, 6613),
+  hoxc6a = c(6614, 7243),
+  kiaa1239 = c(7244, 7987),
+  myh6 = c(7988, 8821),
+  nd2 = c(8822, 9868),
+  nd4 = c(9869, 11401),
+  panx2 = c(11402, 12141),
+  plagl2 = c(12142, 12951),
+  ptr = c(12952, 13662),
+  rag1 = c(13663, 15116),
+  rag2 = c(15117, 16340),
+  rhodopsin = c(16341, 17264),
+  ripk4 = c(17265, 17909),
+  sh3px3 = c(17910, 18632),
+  sidkey = c(18633, 19727),
+  sreb2 = c(19728, 20714),
+  svep1 = c(20715, 21521),
+  tbr1 = c(21522, 22349),
+  vcpip = c(22350, 23114),
+  zic1 = c(23115, 24143)
+)
+
+# Function to split sequence into small sequences using regions
+split_sequence <- function(seq, regions) {
+  result <- list()
+  for (gene in names(regions)) {
+    gene_start <- regions[[gene]][1]
+    gene_end <- regions[[gene]][2]
+    split_seq <- substr(seq, start = gene_start, stop = gene_end)
+    result[[gene]] <- split_seq
+  }
+  return(result)
+}
+
+# Split sequences into small sequences using regions
+split_data <- lapply(df$seq, split_sequence, regions = regions)
+
+# Convert split_data to dataframe
+split_df <- as.data.frame(do.call(rbind, split_data))
+
+# Add Species columns to the dataframe
+split_df$species_name <- df$species_name
+# split_df$ID <- seq_len(nrow(df))
+names(split_df)
+#separate dataframes into 27 dataframes
+#df_12S <- split_df[,c(1,28)]
+
+# Iterate over each gene column and create a separate dataframe for each gene
+for (i in 1:27) {
+  # Extract the column names of split_df
+  col_name <- paste0("Gene", i)
+  
+  # Create a new dataframe containing the gene sequence column and species column
+  assign(paste0("df_", col_name), split_df[, c(i, 28)])
+}
+
+
+
+# #Check the converted dataset
+# class(df_Gene1)
+# 
+# #Replace "-" with nothing 
+# df_0 <- gsub('-','',df_Gene1$"12s")
+# class(df_0)
+# #Convert to dataframe
+# df_0 <- as.data.frame(df_0)
+# #Bind the colum "species name" of fish dataset with new dataframe
+# df_1 <- cbind(fish$species_name,df_0)
+# head(df_1)
+# #Remove rows with empty sequences
+# df_2 <- subset(df_1, df_1$df_0 != "")
+# 
+# colnames(df_2) <- c("species_name","seq")
+# #To take advantage of the DECIPHER calculating the structures and incorporate that info the alignment need RNA sequences
+# #for that need replace all Ts with Us (DNA to RNA)
+# #Then convert to RNAStringset 
+# #Then align with useStructues=TRUE
+# #Once aligned, convert back to DNA to use in my multi-gene alignment
+# 
+# # Replace "t" with "u" in the sequences column
+# df_2$seq <- gsub("t", "u", df_2$seq, ignore.case = TRUE)
+# 
+# # Convert sequences to DNAStringSet object
+# sequences <- RNAStringSet(df_2$seq)
+# 
+# # Assign names to the sequences
+# names(sequences) <- df_2$species_name
+# # Write the DNA sequences to a FASTA file
+# writeXStringSet(sequences, file = "F12S.fasta")
+# # Write the DNA sequences to a FASTA file
+# writeXStringSet(sequences, file = "F12SS.fasta")
+# 
+# 
+# # load the sequences from the file
+# # change "DNA" to "RNA" or "AA" if necessary
+# seqs <- readRNAStringSet("F12S.fasta")
+# 
+# # look at some of the sequences (optional)
+# seqs
+# 
+# # perform the alignment
+# #aligned <- AlignSeqs(seqs)
+# # Perform alignment with structures
+# aligned_seqs <- AlignSeqs(RNAStringSet(seqs), structure=NULL, useStructures=TRUE)
+# 
+# # view the alignment in a browser (optional)
+# BrowseSeqs(aligned_seqs, highlight=0)
+# 
+# # write the alignment to a new FASTA file
+# writeXStringSet(aligned_seqs,
+#                 file="F12S_alg_RNA.fasta")
+# 
+# #read your FASTA file into R using readDNAStringSet function
+# 
+# sequences <- readRNAStringSet("F12S_alg_RNA.fasta")
+# 
+# #convert the sequences into a data frame
+# sequences_df <- data.frame(head= names(sequences),sequence = as.character(sequences), stringsAsFactors = FALSE)
+# colnames(sequences_df)
+# #After the alignment, convert back to DNA to use in my multi-gene alignment
+# sequences_df$sequence <- gsub("U", "T", sequences_df$sequence , ignore.case = TRUE)
+# 
+# #This is what we need as a fasta file for our multi_gene sequence set
+# #So convert to fasta file,
+# 
+# # Convert sequences to DNAStringSet object
+# sequences <- DNAStringSet(sequences_df$sequence)
+# 
+# # Assign names to the sequences
+# names(sequences) <- sequences_df$head
+# 
+# # Write the DNA sequences to a FASTA file
+# writeXStringSet(sequences, file = "alg_F12S.fasta")
+#--------------------------------------------
+#Now repeat the same procedure for 16S
+
+#Check df_Gene2
+head(df_Gene2)
+
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene2$"16s")
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+#To take advantage of the DECIPHER calculating the structures and incorporate that info the alignment need RNA sequences
+#for that need replace all Ts with Us (DNA to RNA)
+#Then convert to RNAStringset 
+#Then align with useStructues=TRUE
+#Once aligned, convert back to DNA to use in my multi-gene alignment
+
+# Replace "t" with "u" in the sequences column
+df_2$seq <- gsub("t", "u", df_2$seq, ignore.case = TRUE)
+
+
+#library(seqinr)
+
+#Now we have to align the ungapped 12S sequences (3320 sequences)
+#install.packages("DECIPHER")
+# load the DECIPHER library in R
+#library(DECIPHER)
+
+# Load the Biostrings package
+#library(Biostrings)
+# Convert sequences to DNAStringSet object
+sequences <- RNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "F16S.fasta")
+
+
+# load the sequences from the file
+# I changed "DNA" to "RNA"if necessary
+seqs <- readRNAStringSet("F16S.fasta")
+
+# look at some of the sequences (optional)
+seqs
+
+# perform the alignment
+#aligned <- AlignSeqs(seqs)
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(RNAStringSet(seqs), structure=NULL, useStructures=TRUE)
+
+# view the alignment in a browser (optional)
+BrowseSeqs(aligned_seqs, highlight=0)
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="F16S_alg_RNA.fasta")
+
+#read your FASTA file into R using readDNAStringSet function
+
+sequences <- readRNAStringSet("F16S_alg_RNA.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(sequences),sequence = as.character(sequences), stringsAsFactors = FALSE)
+colnames(sequences_df)
+#After the alignment, convert back to DNA to use in my multi-gene alignment
+sequences_df$sequence <- gsub("U", "T", sequences_df$sequence , ignore.case = TRUE)
+
+#This is what we need as a fasta file for our multi_gene sequence set
+#So convert to fasta file,
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(sequences_df$sequence)
+
+# Assign names to the sequences
+names(sequences) <- sequences_df$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "alg_F16S.fasta")
+
+#-------------------------------------------------------------------------
+#Check the converted dataset
+class(df_Gene1)
+
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene1$"12s")
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_12S_ncbi <-readDNAStringSet("ncbi12S.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_12S_ncbi),sequence = as.character(fas_12S_ncbi), stringsAsFactors = FALSE)
+
+#Need to extract species name 
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+library(Biostrings)
+colnames(separeted_cols_new)
+# # Group by species
+# grouped_data <- separeted_cols_new %>%
+#   group_by(species_name) %>%
+#   mutate(Length = nchar(sequence)) %>%
+#   filter(Length == max(Length)) %>%
+#   ungroup()
+
+colnames( TwelveS_BOLD)[2] <- "sequence"
+#At this step we added BOLD species to this dataframe
+NB12S<- rbind(separeted_cols_new,TwelveS_BOLD,O22_12S_ncbi)
+
+separeted_cols_new <- NB12S
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+#dif <- data.frame(setdiff(separeted_cols_new$species_name,df_2$species_name))
+library(dplyr)
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 12S dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+new12S <- rbind(df_2,ncbi_extraSppNew)
+
+# #extra step to check whether the 22 species from genome tree missing in rabosky tree are now present in the ncbi downloaded species list.
+# Species_22 <- read.csv("SpcNotinRabosky22.csv")
+# colnames(Species_22) <- "species_name"
+# Species_common <- merge(Species_22,new12S,by="species_name")
+# nchar(Species_common$seq)
+#Alright, since we have the extra 1184 species from ncbi and 3320 species from FTofL dataset (Altogethr, 4509 species)
+#Now we can align the sequences.
+#To take advantage of the DECIPHER calculating the structures and incorporate that info the alignment need RNA sequences
+#for that need replace all Ts with Us (DNA to RNA)
+#Then convert to RNAStringset 
+#Then align with useStructues=TRUE
+#Once aligned, convert back to DNA to use in my multi-gene alignment
+
+#After combining check whether we have sequences from same species
+unique(new12S$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- new12S
+# Replace "t" with "u" in the sequences column
+df_2$seq <- gsub("t", "u", df_2$seq, ignore.case = TRUE)
+
+# Convert sequences to DNAStringSet object
+sequences <- RNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "F12S_nbo.fasta")
+getwd()
+
+# load the sequences from the file
+# change "DNA" to "RNA" or "AA" if necessary
+seqs <- readRNAStringSet("F12S_nbo.fasta")
+
+# look at some of the sequences (optional)
+seqs
+
+# perform the alignment
+#aligned <- AlignSeqs(seqs)
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(RNAStringSet(seqs), structure=NULL, useStructures=TRUE)
+
+# view the alignment in a browser (optional)
+#BrowseSeqs(aligned_seqs, highlight=0)
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="F12S_alg_RNA.fasta")
+
+#read your FASTA file into R using readDNAStringSet function
+
+sequences <- readRNAStringSet("F12S_alg_RNA.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(sequences),sequence = as.character(sequences), stringsAsFactors = FALSE)
+colnames(sequences_df)
+#After the alignment, convert back to DNA to use in my multi-gene alignment
+sequences_df$sequence <- gsub("U", "T", sequences_df$sequence , ignore.case = TRUE)
+
+#This is what we need as a fasta file for our multi_gene sequence set
+#So convert to fasta file,
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(sequences_df$sequence)
+
+# Assign names to the sequences
+names(sequences) <- sequences_df$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "alg_F12S.fasta")
+#-------------------------------
+
+#Check df_Gene2
+head(df_Gene2)
+
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene2$"16s")
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_16S_ncbi <-readDNAStringSet("ncbi16S.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_16S_ncbi),sequence = as.character(fas_16S_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+# # Group by species
+# grouped_data <- separeted_cols_new %>%
+#   group_by(species_name) %>%
+#   mutate(Length = nchar(sequence)) %>%
+#   filter(Length == max(Length)) %>%
+#   ungroup()
+
+colnames(SixteenS_BOLD)[2] <- "sequence"
+#At this step we added BOLD species to this dataframe
+NB16S<- rbind(separeted_cols_new,SixteenS_BOLD,O22_16S_ncbi)
+
+separeted_cols_new <- NB16S
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+#dif <- data.frame(setdiff(separeted_cols_new$species_name,df_2$species_name))
+library(dplyr)
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+new16S<- rbind(df_2,ncbi_extraSppNew)
+# Remove rows with empty cells in column species_name
+new16S <- new16S[!(is.na(new16S$species_name) | new16S$species_name == ""), ]
+
+#Alright, since we have the extra 1184 species from ncbi and 3320 species from FTofL dataset (Altogethr, 4509 species)
+#Now we can align the sequences.
+#To take advantage of the DECIPHER calculating the structures and incorporate that info the alignment need RNA sequences
+#for that need replace all Ts with Us (DNA to RNA)
+#Then convert to RNAStringset 
+#Then align with useStructues=TRUE
+#Once aligned, convert back to DNA to use in my multi-gene alignment
+
+#After combining check whether we have sequences from same species
+unique(new16S$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- new16S
+# Replace "t" with "u" in the sequences column
+df_2$seq <- gsub("t", "u", df_2$seq, ignore.case = TRUE)
+
+# Convert sequences to DNAStringSet object
+sequences <- RNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "F16S_nbo.fasta")
+getwd()
+
+# load the sequences from the file
+# change "DNA" to "RNA" or "AA" if necessary
+seqs <- readRNAStringSet("F16S_nbo.fasta")
+
+# look at some of the sequences (optional)
+seqs
+
+# perform the alignment
+#aligned <- AlignSeqs(seqs)
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(RNAStringSet(seqs), structure=NULL, useStructures=TRUE)
+
+# view the alignment in a browser (optional)
+#BrowseSeqs(aligned_seqs, highlight=0)
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="F16S_alg_RNA.fasta")
+
+#read your FASTA file into R using readDNAStringSet function
+
+sequences <- readRNAStringSet("F16S_alg_RNA.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(sequences),sequence = as.character(sequences), stringsAsFactors = FALSE)
+colnames(sequences_df)
+#After the alignment, convert back to DNA to use in my multi-gene alignment
+sequences_df$sequence <- gsub("U", "T", sequences_df$sequence , ignore.case = TRUE)
+
+#This is what we need as a fasta file for our multi_gene sequence set
+#So convert to fasta file,
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(sequences_df$sequence)
+
+# Assign names to the sequences
+names(sequences) <- sequences_df$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "alg_F16S.fasta")
+#in this alg_F16S.fasta we found that there were few longer sequences than the others and it was throwing off the alignmnet. So Tyler trimmed those sequences
+#I am replacing those shortened sequences instead of long sequences an re-run the alignment.
+sequences <- readDNAStringSet("alg_F16S.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(sequences),sequence = as.character(sequences), stringsAsFactors = FALSE)
+colnames(sequences_df)
+getwd()
+#get the adjusted/ shortened sequence set
+sequences__adj <- readDNAStringSet("16S_adjusted.fasta")
+
+#convert the sequences into a data frame
+sequences_adj_df <- data.frame(head= names(sequences__adj),sequence = as.character(sequences__adj), stringsAsFactors = FALSE)
+names(sequences_adj_df)
+# Perform the join and update the big dataframe with values from the small dataframe
+updated_df <- sequences_df %>%
+  left_join(sequences_adj_df, by = "head", suffix = c(".big", ".small")) %>%
+  mutate(
+    sequence = coalesce(sequence.small, sequence.big),
+  ) %>%
+  select(head, sequence)
+
+#checking
+nchar(updated_df$sequence)
+#Check whether the updated df has shortened sequences.
+result_df <- updated_df %>%
+  filter(nchar(sequence) < 1600)#worked
+
+#now perform alignment
+#Replace "-" with nothing 
+df_0 <- gsub('-','',updated_df$sequence)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(updated_df$head,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "F16S_adj.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="F16S_adj_alg_DNA.fasta")
+
+
+
+#-------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene3$"4c4")
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("ncbi4c4.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+
+
+#At this step we added BOLD species to this dataframe
+NB4C4<- rbind(separeted_cols_new,O22_4C4_ncbi)
+
+separeted_cols_new <- NB4C4
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+#dif <- data.frame(setdiff(separeted_cols_new$species_name,df_2$species_name))
+library(dplyr)
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+new4c4<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(new4c4$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- new4c4
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "F4C4.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="F4C4_alg_DNA.fasta")
+
+#-------------------------------------
+
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene5$cytb)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FCytB.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_CytB_ncbi <-readDNAStringSet("ncbiCytB.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_CytB_ncbi),sequence = as.character(fas_CytB_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+
+#At this step we added BOLD species to this dataframe
+NBcytB<- rbind(separeted_cols_new,O22_cytB_ncbi)
+
+separeted_cols_new <- NBcytB
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newCytB<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newCytB$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newCytB
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FCytB.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="FCytB_alg_DNA.fasta")
+
+#-------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene6$"enc1")
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fenc1.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_enc1_ncbi <-readDNAStringSet("ncbienc1.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_enc1_ncbi),sequence = as.character(fas_enc1_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+
+#At this step we added BOLD species to this dataframe
+NBenc1<- rbind(separeted_cols_new,O22_enc1_ncbi)
+
+separeted_cols_new <- NBenc1
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newenc1<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newenc1$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newenc1
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fenc1.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fenc1_alg_DNA.fasta")
+
+#-------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene7$ficd)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fficd.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_ficd_ncbi <-readDNAStringSet("ncbificd.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_ficd_ncbi),sequence = as.character(fas_ficd_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+
+#At this step we added BOLD species to this dataframe
+NBficd<- rbind(separeted_cols_new,O22_ficd_ncbi)
+
+separeted_cols_new <- NBficd
+
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newficd<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newficd$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newficd
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fficd.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fficd_alg_DNA.fasta")
+#------------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene8$glyt)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fglyt.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_glyt_ncbi <-readDNAStringSet("ncbiglyt.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_glyt_ncbi),sequence = as.character(fas_glyt_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+
+#At this step we added BOLD species to this dataframe
+NBglyt<- rbind(separeted_cols_new,O22_glyt_ncbi)
+
+separeted_cols_new <- NBglyt
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newglyt<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newglyt$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newglyt
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fglyt.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fglyt_alg_DNA.fasta")
+#------------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene9$hoxc6a)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+getwd()
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fhoxc6a.fasta")
+# # Perform alignment with structures
+# aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+# 
+# # write the alignment to a new FASTA file
+# writeXStringSet(aligned_seqs,
+#                 file="RaboskyFhoxc6a_alg_DNA.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+#100 good sequences, tyler sent 
+fas_hoxc6a_ncbi_Tyler <-readDNAStringSet("NCBI_hoxc6a_DNA.fasta")
+#What I found after blasting with Danio rerio, from tyler's file
+fas_hoxc6a_ncbi <-readDNAStringSet("hoxc6a_ncbi1.fasta")
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_hoxc6a_ncbi),sequence = as.character(fas_hoxc6a_ncbi), stringsAsFactors = FALSE)
+sequences_df_Tyler <- data.frame(head= names(fas_hoxc6a_ncbi_Tyler),sequence = as.character(fas_hoxc6a_ncbi_Tyler), stringsAsFactors = FALSE)
+#bind two df
+sequences_df <- rbind(sequences_df_Tyler,sequences_df)
+
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+df_filtered <- separeted_cols_new
+#number of characters
+nchar(separeted_cols_new$sequence)
+# #Found some species with very small sequence lengths. So wanna remove them
+# Add a column for sequence lengths
+separeted_cols_new1 <- separeted_cols_new %>%
+  mutate(length = nchar(sequence))
+
+# Filter the dataframe to include only sequences with a length greater than 550
+df_filtered <- separeted_cols_new1  %>%
+  filter(length > 350)
+names(separeted_cols_new)
+names(df_filtered)
+df_filtered <- df_filtered[,1:2]
+separeted_cols_new <- df_filtered
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+#Load required packages
+dim(df_filtered)
+# new <- rbind(df_filtered,separeted_cols_new)
+# colnames(separeted_cols_new)
+# separeted_cols_new <- new
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+names(separeted_cols_new)
+names(df_2)
+unique(separeted_cols_new$species_name)
+#intersect
+intersect(df_2$species_name,separeted_cols_new$species_name)
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+separeted_cols_new <- separeted_cols_new[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(separeted_cols_new) <- c("species_name","seq")
+df_0New <- gsub('-','',separeted_cols_new$seq)
+class(df_0)
+#Convert to dataframe
+df_0New <- as.data.frame(df_0New)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1New <- cbind(separeted_cols_new$species_name,df_0New)
+head(df_1)
+#Remove rows with empty sequences
+df_2New <- subset(df_1New, df_1New$df_0New != "")
+
+colnames(df_2New) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+# sequences <- DNAStringSet(df_2$seq)
+# 
+# # Assign names to the sequences
+# names(sequences) <- df_2$species_name
+# getwd()
+# # Write the DNA sequences to a FASTA file
+# writeXStringSet(sequences, file = "Fhoxc6a_ncbi123.fasta")
+# # Perform alignment with structures
+# aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+# 
+# # write the alignment to a new FASTA file
+# writeXStringSet(aligned_seqs,
+#                 file="Fhoxc6a_alg_DNA123.fasta")
+
+# # Convert sequences to DNAStringSet object
+# sequences <- DNAStringSet(separeted_cols_new$seq)
+# 
+# # Assign names to the sequences
+# names(sequences) <- separeted_cols_new$species_name
+# getwd()
+# # Write the DNA sequences to a FASTA file
+# writeXStringSet(sequences, file = "Fhoxc6a_ncbi264.fasta")
+# # Perform alignment with structures
+# aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+# 
+# # write the alignment to a new FASTA file
+# writeXStringSet(aligned_seqs,
+#                 file="NCBI2_Fhoxc6a_alg_DNA.fasta")
+
+
+# #Now, check differences between downloaded ncbi hoxc6a and Rabosky hoxc6a
+# different1 <- anti_join(df_2,separeted_cols_new,by="species_name")
+# Perform the join and update the big dataframe with values from the small dataframe
+updated_df <- full_join(df_2, df_2New, by = "species_name", suffix = c(".big", ".small")) %>%
+  mutate(
+    sequence = coalesce(seq.small, seq.big)
+  ) %>%
+  select(species_name, sequence)
+#ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+#Replace "-" with nothing 
+df_0 <- gsub('-','',updated_df$sequence)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(updated_df$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+nchar(df_2$seq)
+# colnames(ncbi_extraSpp)
+# #subset the dataframe just using species name and sequence
+# ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+# #Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+# colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+# names(df_2)
+# newhoxc6a<- rbind(df_2,ncbi_extraSppNew)
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fhoxc6a.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fhoxc6a_alg_DNA_Tyler_ncbi.fasta")
+#------------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene10$kiaa1239)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fkiaa1239.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_kiaa1239_ncbi <-readDNAStringSet("ncbikiaa1239.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_kiaa1239_ncbi),sequence = as.character(fas_kiaa1239_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+
+#At this step we added BOLD species to this dataframe
+NBkiaa1239<- rbind(separeted_cols_new,O22_kiaa1239_ncbi)
+
+separeted_cols_new <- NBkiaa1239
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newkiaa1239<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newkiaa1239$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newkiaa1239
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fkiaa1239.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fkiaa1239_alg_DNA.fasta")
+#------------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene11$myh6)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fmyh6.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_myh6_ncbi <-readDNAStringSet("ncbimyh6.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_myh6_ncbi),sequence = as.character(fas_myh6_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+
+#At this step we added BOLD species to this dataframe
+NBmyh6<- rbind(separeted_cols_new,O22_myh6_ncbi)
+
+separeted_cols_new <- NBmyh6
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newmyh6<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newmyh6$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newmyh6
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fmyh6.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fmyh6_alg_DNA.fasta")
+#------------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene12$nd2)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fnd2.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_nd2_ncbi <-readDNAStringSet("ncbind2.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_nd2_ncbi),sequence = as.character(fas_nd2_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+names(ND2_BOLD)
+names(separeted_cols_new)
+colnames(ND2_BOLD)[2] <- "sequence"
+
+#At this step we added BOLD species to this dataframe
+NBnd2<- rbind(separeted_cols_new,ND2_BOLD,O22_nd2_ncbi)
+
+separeted_cols_new <- NBnd2
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newnd2<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newnd2$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newnd2
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fnd2.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fnd2_alg_DNA.fasta")
+#------------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene13$nd4)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fnd4.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_nd4_ncbi <-readDNAStringSet("ncbind4.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_nd4_ncbi),sequence = as.character(fas_nd4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+colnames(ND4_BOLD)[2] <- "sequence" 
+#At this step we added BOLD species to this dataframe
+NBnd4<- rbind(separeted_cols_new,ND4_BOLD,O22_nd4_ncbi)
+
+separeted_cols_new <- NBnd4
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newnd4<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newnd4$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newnd4
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fnd4.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fnd4_alg_DNA.fasta")
+#-----------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene14$panx2)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fpanx2.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_panx2_ncbi <-readDNAStringSet("ncbipanx2.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_panx2_ncbi),sequence = as.character(fas_panx2_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBpanx2<- rbind(separeted_cols_new,O22_panx2_ncbi)
+
+separeted_cols_new <- NBpanx2
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newpanx2<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newpanx2$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newpanx2
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fpanx2.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fpanx2_alg_DNA.fasta")
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene15$plagl2)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fplagl2.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_plagl2_ncbi <-readDNAStringSet("ncbi_plagl2.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_plagl2_ncbi),sequence = as.character(fas_plagl2_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+# colnames(PLAGL2_BOLD)[2] <- "sequence"
+#At this step we added BOLD species to this dataframe
+NBplagl2<- rbind(separeted_cols_new, O22_plagl2_ncbi)
+
+separeted_cols_new <- NBplagl2
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newplagl2<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newplagl2$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newplagl2
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fplagl2.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fplagl2_alg_DNA.fasta")
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene16$ptr)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fptr.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_ptr_ncbi <-readDNAStringSet("ncbiptr.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_ptr_ncbi),sequence = as.character(fas_ptr_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBptr<- rbind(separeted_cols_new,O22_ptr_ncbi)
+
+separeted_cols_new <- NBptr
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newptr<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newptr$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newptr
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fptr.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fptr_alg_DNA.fasta")
+
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene17$rag1)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Frag1.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_rag1_ncbi <-readDNAStringSet("ncbirag1.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_rag1_ncbi),sequence = as.character(fas_rag1_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+colnames(RAG1_BOLD)[2] <- "sequence" 
+#At this step we added BOLD species to this dataframe
+NBrag1<- rbind(separeted_cols_new,RAG1_BOLD,O22_rag1_ncbi)
+
+separeted_cols_new <- NBrag1
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newrag1<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newrag1$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newrag1
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Frag1.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Frag1_alg_DNA.fasta")
+
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene18$rag2)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Frag2.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_rag2_ncbi <-readDNAStringSet("ncbirag2.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_rag2_ncbi),sequence = as.character(fas_rag2_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+
+#At this step we added BOLD species to this dataframe
+NBrag2<- rbind(separeted_cols_new,O22_rag2_ncbi)
+
+separeted_cols_new <- NBrag2
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newrag2<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newrag2$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newrag2
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Frag2.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Frag2_alg_DNA.fasta")
+
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene19$rhodopsin)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Frhodopsin.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_rhodopsin_ncbi <-readDNAStringSet("ncbirhodopsin.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_rhodopsin_ncbi),sequence = as.character(fas_rhodopsin_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBrhodopsin<- rbind(separeted_cols_new,O22_rhodopsin_ncbi)
+
+separeted_cols_new <- NBrhodopsin
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newrhodopsin<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newrhodopsin$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newrhodopsin
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Frhodopsin.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Frhodopsin_alg_DNA.fasta")
+
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene20$ripk4)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fripk4.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_ripk4_ncbi <-readDNAStringSet("ncbiripk4.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_ripk4_ncbi),sequence = as.character(fas_ripk4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBripk4<- rbind(separeted_cols_new,O22_ripk4_ncbi)
+
+separeted_cols_new <- NBripk4
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newripk4<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newripk4$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newripk4
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fripk4.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fripk4_alg_DNA.fasta")
+
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene21$sh3px3)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fsh3px3.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_sh3px3_ncbi <-readDNAStringSet("ncbish3px3.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_sh3px3_ncbi),sequence = as.character(fas_sh3px3_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBsh3px3<- rbind(separeted_cols_new,O22_sh3px3_ncbi)
+
+separeted_cols_new <- NBsh3px3
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newsh3px3<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newsh3px3$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newsh3px3
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fsh3px3.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fsh3px3_alg_DNA.fasta")
+
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene23$sreb2)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fsreb2.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_sreb2_ncbi <-readDNAStringSet("ncbisreb2.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_sreb2_ncbi),sequence = as.character(fas_sreb2_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+
+#At this step we added BOLD species to this dataframe
+NBsreb2<- rbind(separeted_cols_new,O22_sreb2_ncbi)
+
+separeted_cols_new <- NBsreb2
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newsreb2<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newsreb2$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newsreb2
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fsreb2.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fsreb2_alg_DNA.fasta")
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene22$sidkey)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fsidkey.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_sidkey_ncbi <-readDNAStringSet("ncbisidkey.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_sidkey_ncbi),sequence = as.character(fas_sidkey_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBsidkey<- rbind(separeted_cols_new,O22_sidkey_ncbi)
+
+separeted_cols_new <- NBsidkey
+
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newsidkey<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newsidkey$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newsidkey
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fsidkey.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fsidkey_alg_DNA.fasta")
+
+#---------------------------
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene24$svep1)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fsvep1.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_svep1_ncbi <-readDNAStringSet("ncbisvep1.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_svep1_ncbi),sequence = as.character(fas_svep1_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBsvep1<- rbind(separeted_cols_new,O22_svep1_ncbi)
+
+separeted_cols_new <- NBsvep1
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newsvep1<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newsvep1$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newsvep1
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fsvep1.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fsvep1_alg_DNA.fasta")
+##---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene25$tbr1)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Ftbr1.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_tbr1_ncbi <-readDNAStringSet("ncbitbr1.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_tbr1_ncbi),sequence = as.character(fas_tbr1_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBtbr1<- rbind(separeted_cols_new,O22_tbr1_ncbi)
+
+separeted_cols_new <- NBtbr1
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newtbr1<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newtbr1$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newtbr1
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Ftbr1.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Ftbr1_alg_DNA.fasta")
+#---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene27$zic1)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fzic1.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_zic1_ncbi <-readDNAStringSet("ncbizic1.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_zic1_ncbi),sequence = as.character(fas_zic1_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBzic1<- rbind(separeted_cols_new,O22_zic1_ncbi)
+
+separeted_cols_new <- NBzic1
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newzic1<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newzic1$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newzic1
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fzic1.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fzic1_alg_DNA.fasta")
+##---------------------------------
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene26$vcpip)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fvcpip.fasta")
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+fas_vcpip_ncbi <-readDNAStringSet("ncbivcpip.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_vcpip_ncbi),sequence = as.character(fas_vcpip_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+#number of characters
+nchar(separeted_cols_new$sequence)
+#To remove redundant species, keep one sequence per species. select the longest squence per species.
+# Load required packages
+
+colnames(separeted_cols_new)
+#At this step we added BOLD species to this dataframe
+NBvcpip<- rbind(separeted_cols_new,O22_vcpip_ncbi)
+
+separeted_cols_new <- NBvcpip
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newvcpip<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newvcpip$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newvcpip
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fvcpip.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fvcpip_alg_DNA.fasta")
+
+
+
+#Replace "-" with nothing 
+df_0 <- gsub('-','',df_Gene4$coi)
+class(df_0)
+#Convert to dataframe
+df_0 <- as.data.frame(df_0)
+#Bind the colum "species name" of fish dataset with new dataframe
+df_1 <- cbind(fish$species_name,df_0)
+head(df_1)
+#Remove rows with empty sequences
+df_2 <- subset(df_1, df_1$df_0 != "")
+
+colnames(df_2) <- c("species_name","seq")
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FCO1.fasta")
+
+# #read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+# fas_CytB_ncbi <-readDNAStringSet("ncbiCytB.fasta")
+# 
+# #convert the sequences into a data frame
+# sequences_df <- data.frame(head= names(fas_CytB_ncbi),sequence = as.character(fas_CytB_ncbi), stringsAsFactors = FALSE)
+# #Need to extract species name 
+# #remove the word "PREDICTED" from head column
+# sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+# 
+# #For that 1st need to separate the head column by spaces,
+# separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+# #Combine value 2 and 3 together to build the species name
+# separeted_cols_new <- separeted_cols %>% 
+#   unite(species_name, c("value2", "value3"))
+# 
+# separeted_cols_new <- separeted_cols_new[,c(2,6)]
+# #number of characters
+# nchar(separeted_cols_new$sequence)
+# #To remove redundant species, keep one sequence per species. select the longest squence per species.
+# # Load required packages
+# 
+# colnames(separeted_cols_new)
+colnames(CO1_BOLD_new)[2] <- "sequence"
+#At this step we added BOLD species to this dataframe
+NBco1<- rbind(CO1_BOLD_new,O22_CO1_ncbi)
+
+separeted_cols_new <- NBco1
+# Group by species
+grouped_data <- separeted_cols_new %>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(sequence)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+separeted_cols_new <- grouped_data
+
+unique(separeted_cols_new$species_name)
+#Now, check differences between downloaded ncbi 12S and Rabosky 12S
+
+ncbi_extraSpp <- anti_join(separeted_cols_new,df_2,by="species_name")
+
+colnames(ncbi_extraSpp)
+#subset the dataframe just using species name and sequence
+ncbi_extraSppNew <- ncbi_extraSpp[,c(1:2)]
+#Now combine this dataframe to the 16 dataframe we obtained from FTof L dataset (df_2 dataframe)
+colnames(ncbi_extraSppNew) <- c("species_name","seq")
+#check col names of df_2
+names(df_2)
+newco1<- rbind(df_2,ncbi_extraSppNew)
+
+#After combining check whether we have sequences from same species
+unique(newco1$species_name)
+
+#assing to df_2 for downstream analysis
+df_2 <- newco1
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$seq)
+
+# Assign names to the sequences
+names(sequences) <- df_2$species_name
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FCO1.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="FCO1_alg_DNA.fasta")
+#BOLD data--------------------------
+#raed csv file to r
+BOLD <- read.csv("FishCO1_new.csv")
+df <- BOLD
+names(df)
+#Filter the df
+CO1_df <- df[df[["markercode"]] == "COI-5P",]
+
+# Group by species
+CO1_grouped_data <- CO1_df%>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(nucleotides)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+unique(CO1_grouped_data$species_name)
+# Replace spaces with underscores for all strings in the column
+CO1_grouped_data <- CO1_grouped_data  %>%
+  mutate(species_name = gsub(" ", "_", species_name))
+
+CO1_BOLD <- CO1_grouped_data[,c("species_name","nucleotides")]
+#-------Check if there are characters other than a,t,c,g-------
+# Function to check if a sequence contains only "a", "t", "g", or "c" letters
+is_valid_sequence <- function(sequence) {
+  all(strsplit(sequence, "")[[1]] %in% c("A", "T", "G", "C"))
+}
+
+# Filter rows with valid sequences
+valid_rows <- sapply(CO1_BOLD$nucleotides, is_valid_sequence)
+
+# Subset the dataframe to keep only rows with valid sequences
+CO1_BOLD <- CO1_BOLD[valid_rows, ]
+
+#Remove the rows contains "sp." since we need genus and species name.
+CO1_BOLD_sp <- CO1_BOLD[!grepl("sp\\.", CO1_BOLD$species_name), ]
+CO1_BOLD_cf <- CO1_BOLD_sp[!grepl("cf\\.", CO1_BOLD_sp$species_name), ]
+CO1_BOLD_aff <- CO1_BOLD_cf[!grepl("aff\\.", CO1_BOLD_cf$species_name), ]
+CO1_BOLD_X_ <- CO1_BOLD_aff[!grepl("_\\X\\_", CO1_BOLD_aff$species_name), ]
+CO1_BOLD_new <- CO1_BOLD_X_
+
+TwelveS_df <- df[df[["markercode"]] == "12S",]
+
+# Group by species
+TwelveS_grouped_data <- TwelveS_df%>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(nucleotides)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+
+# Replace spaces with underscores for all strings in the column
+TwelveS_grouped_data <- TwelveS_grouped_data  %>%
+  mutate(species_name = gsub(" ", "_", species_name))
+
+TwelveS_BOLD <- TwelveS_grouped_data[,c("species_name","nucleotides")]
+
+# Filter rows with valid sequences
+valid_rows <- sapply(TwelveS_BOLD$nucleotides, is_valid_sequence)
+
+# Subset the dataframe to keep only rows with valid sequences
+TwelveS_BOLD <- TwelveS_BOLD[valid_rows, ]
+
+SixteenS_df <- df[df[["markercode"]] == "16S",]
+
+# Group by species
+SixteenS_grouped_data <- SixteenS_df%>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(nucleotides)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+
+# Replace spaces with underscores for all strings in the column
+SixteenS_grouped_data <- SixteenS_grouped_data  %>%
+  mutate(species_name = gsub(" ", "_", species_name))
+
+SixteenS_BOLD <- SixteenS_grouped_data[,c("species_name","nucleotides")]
+
+# Filter rows with valid sequences
+valid_rows <- sapply(SixteenS_BOLD$nucleotides, is_valid_sequence)
+
+# Subset the dataframe to keep only rows with valid sequences
+SixteenS_BOLD <- SixteenS_BOLD[valid_rows, ]
+
+unique(df$markercode)
+ND2_df <- df[df[["markercode"]] == "ND2",]
+
+# Group by species
+ND2_grouped_data <- ND2_df%>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(nucleotides)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+
+# Replace spaces with underscores for all strings in the column
+ND2_grouped_data <- ND2_grouped_data  %>%
+  mutate(species_name = gsub(" ", "_", species_name))
+
+ND2_BOLD <- ND2_grouped_data[,c("species_name","nucleotides")]
+
+# Filter rows with valid sequences
+valid_rows <- sapply(ND2_BOLD$nucleotides, is_valid_sequence)
+
+# Subset the dataframe to keep only rows with valid sequences
+ND2_BOLD <- ND2_BOLD[valid_rows, ]
+
+ND4_df <- df[df[["markercode"]] == "ND4",]
+
+# Group by species
+ND4_grouped_data <- ND4_df%>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(nucleotides)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+
+# Replace spaces with underscores for all strings in the column
+ND4_grouped_data <- ND4_grouped_data  %>%
+  mutate(species_name = gsub(" ", "_", species_name))
+
+ND4_BOLD <- ND4_grouped_data[,c("species_name","nucleotides")]
+
+# Filter rows with valid sequences
+valid_rows <- sapply(ND4_BOLD$nucleotides, is_valid_sequence)
+
+# Subset the dataframe to keep only rows with valid sequences
+ND4_BOLD <- ND4_BOLD[valid_rows, ]
+
+PLAGL2_df <- df[df[["markercode"]] == "PLAGL2",]
+# Group by species
+PLAGL2_grouped_data <- PLAGL2_df%>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(nucleotides)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+
+# Replace spaces with underscores for all strings in the column
+PLAGL2_grouped_data <- PLAGL2_grouped_data  %>%
+  mutate(species_name = gsub(" ", "_", species_name))
+
+PLAGL2_BOLD <- PLAGL2_grouped_data[,c("species_name","nucleotides")]
+
+# Filter rows with valid sequences
+valid_rows <- sapply(PLAGL2_BOLD$nucleotides, is_valid_sequence)
+
+# Subset the dataframe to keep only rows with valid sequences
+PLAGL2_BOLD <- PLAGL2_BOLD[valid_rows, ]
+
+TMO4C4_df <- df[df[["markercode"]] == "TMO-4C4",]
+# Group by species
+TMO4C4_grouped_data <- TMO4C4_df%>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(nucleotides)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+
+# Replace spaces with underscores for all strings in the column
+TMO4C4_grouped_data <- TMO4C4_grouped_data  %>%
+  mutate(species_name = gsub(" ", "_", species_name))
+
+TMO4C4_BOLD <- TMO4C4_grouped_data[,c("species_name","nucleotides")]
+
+# Filter rows with valid sequences
+valid_rows <- sapply(TMO4C4_BOLD$nucleotides, is_valid_sequence)
+
+# Subset the dataframe to keep only rows with valid sequences
+TMO4C4_BOLD <- TMO4C4_BOLD[valid_rows, ]
+
+
+RAG1_df <- df[df[["markercode"]] == "RAG1",]
+# Group by species
+RAG1_grouped_data <- RAG1_df%>%
+  group_by(species_name) %>%
+  mutate(Length = nchar(nucleotides)) %>%
+  filter(Length == max(Length)) %>%
+  ungroup() %>%
+  distinct(species_name, .keep_all = TRUE)
+
+
+# Replace spaces with underscores for all strings in the column
+RAG1_grouped_data <- RAG1_grouped_data  %>%
+  mutate(species_name = gsub(" ", "_", species_name))
+names(RAG1_grouped_data)
+RAG1_BOLD <- RAG1_grouped_data[,c("species_name","nucleotides")]
+
+# Filter rows with valid sequences
+valid_rows <- sapply(RAG1_BOLD$nucleotides, is_valid_sequence)
+
+# Subset the dataframe to keep only rows with valid sequences
+RAG1_BOLD <- RAG1_BOLD[valid_rows, ]
+
+#Need to get one sequence per species. This should be the largest sequence
+names(CO1_df)
+
+#-------OUT GROUPS AND 22 SPECIES
+#I have out groups and the missing 22 species fasta files for each gene (downloaded from ncbi)
+#read thoses fasta files into r
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+O22_16S_ncbi <-readDNAStringSet("O22_16S.fasta")
+#O22_16S_ncbi <-readDNAStringSet("svep1_22.fasta")
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(O22_16S_ncbi),sequence = as.character(O22_16S_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+O22_16S_ncbi <- separeted_cols_new
+names(O22_12S_ncbi)
+# # Function to find unique characters in a string
+# find_unique_characters <- function(sequence) {
+#   unique(unlist(strsplit(sequence, "")))
+# }
+O22_zic1_ncbi[24,1] <- "Homo_sapiens"
+# # Apply the function to the dataframe column
+# charac <- sapply(O22_16S_ncbi$strings, find_unique_characters)
+
+
+# Convert sequences to DNAStringSet object
+O22_16S_ncbi$sequence <- DNAStringSet(O22_16S_ncbi$sequence)
+class(O22_16S_ncbi$sequence)
+# # Function to check if a sequence contains only "a", "t", "g", or "c" letters
+# is_valid_sequence <- function(sequence) {
+#   all(strsplit(sequence, "")[[1]] %in% c("a", "t", "g", "c"))
+# }
+# 
+# # Filter rows with valid sequences
+# valid_rows <- sapply(O22_16S_ncbi$Sequence, is_valid_sequence)
+# 
+# # Subset the dataframe to keep only rows with valid sequences
+# df <- df[valid_rows, ]
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+O22_16S_ncbi <-readDNAStringSet("O22_CO1.fasta")
+#O22_16S_ncbi <-readDNAStringSet("svep1_22.fasta")
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(O22_16S_ncbi),sequence = as.character(O22_16S_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+O22_CO1_ncbi <- separeted_cols_new
+names(O22_12S_ncbi)
+# # Function to find unique characters in a string
+# find_unique_characters <- function(sequence) {
+#   unique(unlist(strsplit(sequence, "")))
+# }
+
+# # Apply the function to the dataframe column
+# charac <- sapply(O22_16S_ncbi$strings, find_unique_characters)
+
+# 
+# # Convert sequences to DNAStringSet object
+# O22_16S_ncbi$sequence <- DNAStringSet(O22_16S_ncbi$sequence)
+# class(O22_16S_ncbi$sequence)
+
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+O22_16S_ncbi <-readDNAStringSet("O22_plagl2.fasta")
+#O22_16S_ncbi <-readDNAStringSet("svep1_22.fasta")
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(O22_16S_ncbi),sequence = as.character(O22_16S_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+O22_plagl2_ncbi <- separeted_cols_new
+getwd()
+#read ncbi downloaded 12s fasta in to R to see if there are new species in this list
+O22_16S_ncbi <-readDNAStringSet("O22_zic1.fasta")
+#O22_16S_ncbi <-readDNAStringSet("svep1_22.fasta")
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(O22_16S_ncbi),sequence = as.character(O22_16S_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name 
+
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+#For that 1st need to separate the head column by spaces,
+separeted_cols <- separate(sequences_df, col=head, into= paste0("value",1:6),sep=" ")
+#Combine value 2 and 3 together to build the species name
+separeted_cols_new <- separeted_cols %>% 
+  unite(species_name, c("value2", "value3"))
+
+separeted_cols_new <- separeted_cols_new[,c(2,6)]
+O22_zic1_ncbi <- separeted_cols_new
