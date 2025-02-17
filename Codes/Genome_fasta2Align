@@ -1,3 +1,4 @@
+#This code is to arrange and align all the busco genes downloaded using command line tool in NCBI. Final output is a fasta align file.
 #Load packages
 require(tidyverse)
 require(tidyr)
