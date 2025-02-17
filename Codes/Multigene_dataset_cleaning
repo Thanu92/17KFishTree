@@ -1,0 +1,2261 @@
+#June 14, 2024
+#This code is to clean the single genes in multiple gene dataset
+library(seqinr)
+
+#Now we have to align the ungapped 12S sequences (3320 sequences)
+#install.packages("DECIPHER")
+# load the DECIPHER library in R
+library(DECIPHER)
+
+# Load the Biostrings package
+library(Biostrings)
+library(tidyr)
+library(dplyr)
+library(readr)
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("4C4New.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# 
+# #Correct the species names if they are in abbreviations
+# # Change the specific cell value in the 'head' column
+# cleaned_data$head[cleaned_data$head == "Scomberomorus_aff."] <- "Scomberomorus_affinis"
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_4c4_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Final4c4Alignment.fasta")
+#-----------------------------------
+
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("12S.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_12s_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Final12sAlignment.fasta")
+#----------------------------------
+
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("16SNew.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_16s_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Final16sAlignment.fasta")
+#------------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("enc1.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_enc1_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalenc1Alignment.fasta")
+#-----
+#------------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("ficd.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_ficd_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FinalficdAlignment.fasta")
+#---------------------------
+#------------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("glyt.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_glyt_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FinalglytAlignment.fasta")
+#------------------
+#------------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("kiaa1239.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_kiaa1239_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalkiaa1239Alignment.fasta")
+#--------------------
+#------------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("myh6.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_myh6_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalmyh6Alignment.fasta")
+#------------------
+#------------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("panx2.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_panx2_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalpanx2Alignment.fasta")
+#--------------
+#------------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("plagl2.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_plagl2_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalplagl2Alignment.fasta")
+#------
+#------------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("ptr.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_ptr_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FinalptrAlignment.fasta")
+#----------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("rag1New.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_rag1_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalrag1Alignment.fasta")
+#------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("rag2New.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_rag2_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalrag2Alignment.fasta")
+#------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("rhodopsinNew.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_rhodopsin_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FinalrhodopsinAlignment.fasta")
+#---------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("ripk4.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_ripk4_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalripk4Alignment.fasta")
+#--------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("sh3px3.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_sh3px3_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalsh3px3Alignment.fasta")
+#--------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("sidkey.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_sidkey_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FinalsidkeyAlignment.fasta")
+#----------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("sreb2New.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_sreb2_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalsreb2Alignment.fasta")
+#----
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("svep1.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_svep1_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalsvep1Alignment.fasta")
+#----
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("tbr1New.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_tbr1_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finaltbr1Alignment.fasta")
+#-----
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("vcpip.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_vcpip_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FinalvcpipAlignment.fasta")
+#-----
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("zic1New.fas")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_zic1_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalzic1Alignment.fasta")
+#------------------
+#CytB, ND2 And ND4
+#read tsv file
+# Load the readr package
+library(readr)
+
+# Read TSV file using readr
+cytb1 <- read_tsv("cytb_group1.tsv",col_names = F,show_col_types = FALSE)
+cytb2 <- read_tsv("cytb_batch2.tsv",col_names = F,show_col_types = FALSE)
+
+#Bind two data frames together
+cytb <- rbind(cytb1,cytb2)
+
+# Function to get the first two words and join them with an underscore
+get_first_two_words <- function(text) {
+  words <- unlist(strsplit(text, " "))
+  paste(words[1:2], collapse = "_")
+}
+
+# Apply the function to the 'details' column
+first_two_words <- sapply(cytb$X4, get_first_two_words)
+
+# Create new data frame
+new_cytb <- data.frame(
+  head = first_two_words,
+  sequence = cytb$X6
+)
+nchar(new_cytb$sequence)
+
+#read the cytB, I have (from rabosky and ncbi)
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+#FCytB_alg_DNA.fasta is in Chap2/MultiGene folder, I pasted in into Tyler ckecked folder
+cytb_Rabosky_ncbi <-readDNAStringSet("FCytB_alg_DNA.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(cytb_Rabosky_ncbi),sequence = as.character(cytb_Rabosky_ncbi), stringsAsFactors = FALSE)
+# Remove row names (extar column)
+rownames(sequences_df) <- NULL
+# Remove '-' characters from the 'sequence' column
+sequences_df$sequence  <- gsub("-", "", sequences_df$sequence)
+nchar(sequences_df$sequence)
+#Now combine this to new_cytb dataframe
+combined_Cytb <- rbind(new_cytb,sequences_df)
+new_cytb <- combined_Cytb
+
+# # Filter the DataFrame to keep only the longest sequence for each species name
+# final_cytb <- new_cytb %>%
+#   group_by(head) %>%
+#   filter(nchar(sequence) == max(nchar(sequence))) %>%
+#   ungroup()
+
+# final_cytb <- new_cytb %>%
+#   group_by(head) %>%
+#   filter(nchar(sequence) == max(nchar(sequence))) %>%
+#   slice_head(n = 1) %>%
+#   ungroup()
+# 
+# # remove rows with empty cells, and remove rows with 'NA_NA'
+# final_cytb <- final_cytb %>%
+#   filter(head != "" & head != "NA_NA" & sequence != "") %>%
+#   group_by(head) %>%
+#   filter(nchar(sequence) == max(nchar(sequence))) %>%
+#   ungroup()
+final_cytb <- new_cytb %>%
+  filter(sequence != "") %>%
+  filter(head != "" & head != "NA_NA") %>%
+  group_by(head) %>%
+  mutate(sequence_length = nchar(sequence)) %>%
+  arrange(desc(sequence_length)) %>%
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  filter(sequence_length > 500) %>%
+  select(-sequence_length)
+
+# Check if there's only one unique species name and no duplicates
+species_check <- final_cytb %>%
+  distinct(head) %>%  # Keep only unique species names
+  summarise(n_species = n())  # Count the number of unique species names
+
+
+df_2 <- final_cytb 
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$sequence)
+
+# Assign names to the sequences
+names(sequences) <- df_2$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FcytbNew.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="FcytbNew_alg_DNA.fasta")
+
+#Read new cytb fasta file,
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("FcytbNew_alg_DNATrimmed.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+cleaned_data <- sequences_df
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_x\\_", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+# Remove '-' characters from the 'sequence' column
+cleaned_data$sequence  <- gsub("-", "", cleaned_data$sequence )
+nchar(cleaned_data$sequence)
+final_cytb <- cleaned_data%>%
+  filter(sequence != "") %>%
+  filter(head != "" & head != "NA_NA") %>%
+  group_by(head) %>%
+  mutate(sequence_length = nchar(sequence)) %>%
+  arrange(desc(sequence_length)) %>%
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  filter(sequence_length > 400) %>%
+  select(-sequence_length)
+
+# Check if there's only one unique species name and no duplicates
+species_check <- final_cytb  %>%
+  distinct(head) %>%  # Keep only unique species names
+  summarise(n_species = n())  # Count the number of unique species names
+
+df_2 <- final_cytb
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$sequence)
+
+# Assign names to the sequences
+names(sequences) <- df_2$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FcytbNew.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="FcytbNew_alg_DNA.fasta")
+
+#------------ND2-----
+
+# Read TSV file using readr
+nd2_1 <- read_tsv("nd2_group1.tsv",col_names = F,show_col_types = FALSE)
+nd2_2 <- read_tsv("nd2_batch2.tsv",col_names = F,show_col_types = FALSE)
+
+#Bind two data frames together
+cytb <- rbind(nd2_1,nd2_2)
+
+# Function to get the first two words and join them with an underscore
+get_first_two_words <- function(text) {
+  words <- unlist(strsplit(text, " "))
+  paste(words[1:2], collapse = "_")
+}
+
+# Apply the function to the 'details' column
+first_two_words <- sapply(cytb$X4, get_first_two_words)
+
+# Create new data frame
+new_cytb <- data.frame(
+  head = first_two_words,
+  sequence = cytb$X6
+)
+nchar(new_cytb$sequence)
+
+#read the cytB, I have (from rabosky and ncbi)
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+#FCytB_alg_DNA.fasta is in Chap2/MultiGene folder, I pasted in into Tyler ckecked folder
+cytb_Rabosky_ncbi <-readDNAStringSet("Fnd2_alg_DNA.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(cytb_Rabosky_ncbi),sequence = as.character(cytb_Rabosky_ncbi), stringsAsFactors = FALSE)
+# Remove row names (extar column)
+rownames(sequences_df) <- NULL
+# Remove '-' characters from the 'sequence' column
+sequences_df$sequence  <- gsub("-", "", sequences_df$sequence)
+nchar(sequences_df$sequence)
+#Now combine this to new_cytb dataframe
+combined_Cytb <- rbind(new_cytb,sequences_df)
+new_cytb <- combined_Cytb
+
+# # Filter the DataFrame to keep only the longest sequence for each species name
+# final_cytb <- new_cytb %>%
+#   group_by(head) %>%
+#   filter(nchar(sequence) == max(nchar(sequence))) %>%
+#   ungroup()
+
+final_cytb <- new_cytb %>%
+  group_by(head) %>%
+  filter(nchar(sequence) == max(nchar(sequence))) %>%
+  slice_head(n = 1) %>%
+  ungroup()
+
+# remove rows with empty cells, and remove rows with 'NA_NA'
+final_cytb <- final_cytb %>%
+  filter(head != "" & head != "NA_NA" & sequence != "") %>%
+  group_by(head) %>%
+  filter(nchar(sequence) == max(nchar(sequence))) %>%
+  ungroup()
+
+
+# Check if there's only one unique species name and no duplicates
+species_check <- final_cytb %>%
+  distinct(head) %>%  # Keep only unique species names
+  summarise(n_species = n())  # Count the number of unique species names
+
+
+df_2 <- final_cytb 
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$sequence)
+
+# Assign names to the sequences
+names(sequences) <- df_2$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fnd2New.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fnd2New_alg_DNA.fasta")
+#Read new nd2 fasta file,
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("Fnd2New_alg_DNA.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+cleaned_data <- sequences_df
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_x\\_", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+# Remove '-' characters from the 'sequence' column
+cleaned_data$sequence  <- gsub("-", "", cleaned_data$sequence )
+
+# Check if there's only one unique species name and no duplicates
+species_check <- cleaned_data %>%
+  distinct(head) %>%  # Keep only unique species names
+  summarise(n_species = n())  # Count the number of unique species names
+df_2 <- cleaned_data
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$sequence)
+
+# Assign names to the sequences
+names(sequences) <- df_2$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fnd2New.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fnd2New_alg_DNA.fasta")
+
+
+#---ND4-----
+
+
+# Read TSV file using readr
+nd4_1 <- read_tsv("nd4_group1.tsv",col_names = F,show_col_types = FALSE)
+nd4_2 <- read_tsv("nd4_batch2.tsv",col_names = F,show_col_types = FALSE)
+
+#Bind two data frames together
+cytb <- rbind(nd4_1,nd4_2)
+
+# Function to get the first two words and join them with an underscore
+get_first_two_words <- function(text) {
+  words <- unlist(strsplit(text, " "))
+  paste(words[1:2], collapse = "_")
+}
+
+# Apply the function to the 'details' column
+first_two_words <- sapply(cytb$X4, get_first_two_words)
+
+# Create new data frame
+new_cytb <- data.frame(
+  head = first_two_words,
+  sequence = cytb$X6
+)
+nchar(new_cytb$sequence)
+
+#read the cytB, I have (from rabosky and ncbi)
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+#FCytB_alg_DNA.fasta is in Chap2/MultiGene folder, I pasted in into Tyler ckecked folder
+cytb_Rabosky_ncbi <-readDNAStringSet("Fnd4_alg_DNA.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(cytb_Rabosky_ncbi),sequence = as.character(cytb_Rabosky_ncbi), stringsAsFactors = FALSE)
+# Remove row names (extar column)
+rownames(sequences_df) <- NULL
+# Remove '-' characters from the 'sequence' column
+sequences_df$sequence  <- gsub("-", "", sequences_df$sequence)
+nchar(sequences_df$sequence)
+#Now combine this to new_cytb dataframe
+combined_Cytb <- rbind(new_cytb,sequences_df)
+new_cytb <- combined_Cytb
+# # Change the specific cell value in the 'head' column
+new_cytb$head[new_cytb$head == "(Megalobrama_amblycephala"] <- "Megalobrama_amblycephala"
+
+final_cytb <- new_cytb %>%
+  filter(sequence != "") %>%
+  filter(head != "" & head != "NA_NA") %>%
+  group_by(head) %>%
+  mutate(sequence_length = nchar(sequence)) %>%
+  arrange(desc(sequence_length)) %>%
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  filter(sequence_length > 500) %>%
+  select(-sequence_length)
+# # Filter the DataFrame to keep only the longest sequence for each species name
+# final_cytb <- new_cytb %>%
+#   group_by(head) %>%
+#   filter(nchar(sequence) == max(nchar(sequence))) %>%
+#   ungroup()
+
+# final_cytb <- new_cytb %>%
+#   group_by(head) %>%
+#   filter(nchar(sequence) == max(nchar(sequence))) %>%
+#   slice_head(n = 1) %>%
+#   ungroup()
+# 
+# # remove rows with empty cells, and remove rows with 'NA_NA'
+# final_cytb <- final_cytb %>%
+#   filter(head != "" & head != "NA_NA" & sequence != "") %>%
+#   group_by(head) %>%
+#   filter(nchar(sequence) == max(nchar(sequence))) %>%
+#   ungroup()
+
+
+# Check if there's only one unique species name and no duplicates
+species_check <- final_cytb %>%
+  distinct(head) %>%  # Keep only unique species names
+  summarise(n_species = n())  # Count the number of unique species names
+
+#remove the word "PREDICTED" from head column
+final_cytb$head <- gsub("PREDICTED: ", "",final_cytb$head)
+
+cleaned_data <- final_cytb
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_x\\_|Cf.\\_|:\\_", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+# Remove '-' characters from the 'sequence' column
+cleaned_data$sequence  <- gsub("-", "", cleaned_data$sequence )
+
+# Check if there's only one unique species name and no duplicates
+species_check <- cleaned_data %>%
+  distinct(head) %>%  # Keep only unique species names
+  summarise(n_species = n())  # Count the number of unique species names
+# Assuming your dataframe is named `final_cytb`
+duplicated_heads <- final_cytb$duplicated_heads <- duplicated(final_cytb$head)
+final_cytb[duplicated_heads, ]
+nchar(cleaned_data$sequence)
+df_2 <- cleaned_data
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$sequence)
+
+# Assign names to the sequences
+names(sequences) <- df_2$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Fnd4New.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Fnd4New_alg_DNA.fasta")
+
+#------------CO1 realignment-----
+#Read new CO1 fasta file,
+fas_4c4_ncbi <-readDNAStringSet("FCO1_alg_DNA_new.fasta")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+cleaned_data <- sequences_df
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_x\\_", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+# Remove '-' characters from the 'sequence' column
+cleaned_data$sequence  <- gsub("-", "", cleaned_data$sequence )
+nchar(cleaned_data$sequence)
+final_cytb <- cleaned_data%>%
+  filter(sequence != "") %>%
+  filter(head != "" & head != "NA_NA") %>%
+  group_by(head) %>%
+  mutate(sequence_length = nchar(sequence)) %>%
+  arrange(desc(sequence_length)) %>%
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  filter(sequence_length > 400) %>%
+  select(-sequence_length)
+
+# Check if there's only one unique species name and no duplicates
+species_check <- final_cytb  %>%
+  distinct(head) %>%  # Keep only unique species names
+  summarise(n_species = n())  # Count the number of unique species names
+
+df_2 <- final_cytb
+
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(df_2$sequence)
+
+# Assign names to the sequences
+names(sequences) <- df_2$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FCO1New.fasta")
+getwd()
+# 
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="FCO1New_alg_DNA.fasta")
+
+#----------------co1 after TYler checking the alignmnet
+
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("COI.Mask.fst")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_CO1_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+names(cleaned_data)
+df_unique <- cleaned_data %>%
+  distinct(head, .keep_all = TRUE)
+
+cleaned_data <- df_unique
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "FinalCO1alignment.fasta")
+
+
+#Update 24 June 2024----------------
+#Final alignments after tyler's check for cytb, nd2, nd4, rhodopsin
+
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("CytB.Mask.fst")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_cytb_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+names(cleaned_data)
+df_unique <- cleaned_data %>%
+  distinct(head, .keep_all = TRUE)
+
+cleaned_data <- df_unique
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalcytbalignment.fasta")
+#-------------------------------------------------------
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("nd2.Mask - Copy.fst")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_nd2_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+names(cleaned_data)
+df_unique <- cleaned_data %>%
+  distinct(head, .keep_all = TRUE)
+
+cleaned_data <- df_unique
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalnd2alignment.fasta")
+#------------------------------------------------
+
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("nd4.Mask - Copy.fst")
+
+#convert the sequences into a data frame
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+#to remove row names as a column.
+rownames(cleaned_data) <- NULL
+Final_nd4_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+names(cleaned_data)
+df_unique <- cleaned_data %>%
+  distinct(head, .keep_all = TRUE)
+
+cleaned_data <- df_unique
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "Finalnd4alignment.fasta")
+
+#---------------------------------------
+#For rhodopsin, tyler found 4 good species as replacement and also asked to remove few species since he couldn't findd good sequences.
+#read the 4 rhodopsin sequences tyler sent,
+rhodopsin_replacements <-readDNAStringSet("rhodopsin.txt")
+
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("FinalrhodopsinAlignment.fasta")
+
+#convert the sequences into a data frame
+sequences_df_replacements <- data.frame(head= names(rhodopsin_replacements),sequence = as.character(rhodopsin_replacements), stringsAsFactors = FALSE)
+#to remove row names as a column.
+rownames(sequences_df_replacements) <- NULL
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+sequences_df <- rbind(sequences_df_replacements,sequences_df)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+
+Final_rhodopsin_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+names(cleaned_data)
+df_unique <- cleaned_data %>%
+  distinct(head, .keep_all = TRUE)
+
+cleaned_data <- df_unique
+
+# Remove dashes from the sequence column
+df_clean <- cleaned_data %>%
+  mutate(sequence = gsub("-", "", sequence))
+cleaned_data <- df_clean
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "NewRhodopsin.fasta")
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="Finalrhodopsinalignment.fasta")
+# # Write the DNA sequences to a FASTA file
+# writeXStringSet(sequences, file = "Finalrhodopsinalignment.fasta")
+#----------------------------
+#CytB alignment
+#read ncbi downloaded fasta in to R to see if there are new species in this list
+fas_4c4_ncbi <-readDNAStringSet("Finalcytbalignment.fasta")
+
+sequences_df <- data.frame(head= names(fas_4c4_ncbi),sequence = as.character(fas_4c4_ncbi), stringsAsFactors = FALSE)
+#Need to extract species name
+#remove the word "PREDICTED" from head column
+sequences_df$head <- gsub("PREDICTED: ", "",sequences_df$head)
+
+# Function to extract species name
+
+extract_species_name <- function(head) {
+  match <- regexpr("\\b[A-Z][a-z]+ [a-z]+\\b", head)
+  if (match[1] != -1) {
+    species_name <- regmatches(head, match)
+    return(species_name)
+  } else {
+    return(head)  # If no match is found, return the original description
+  }
+}
+
+# Use mutate to apply the function to the description column
+cleaned_data <- sequences_df %>%
+  mutate(head = sapply(head, extract_species_name))
+
+# Print the result
+#print(cleaned_data)
+
+nchar(cleaned_data$sequence)
+
+class(cleaned_data$head)
+# Replace spaces with underscores for all entries in the 'head' column
+cleaned_data$head <- gsub(" ", "_", cleaned_data$head)
+
+# Find entries in 'head' column containing "_sp"
+sp_entries <- cleaned_data$head[grep("_sp\\.$|_cf\\.$|_cf\\._|_aff\\.$|_sp\\._|_gen\\.$|_gr\\.$|_aff\\._", cleaned_data$head)]
+#check what are they
+sp_entries
+sp_entries_vec <- c(sp_entries)
+#Now I check one by one useing Blast to get the epithets names of that genus.
+#There's no specific name. they are unknown. Since, we need full species name. not genus, we remove these unknown species from our list. 
+# Remove rows based on species names
+cleaned_data <- cleaned_data[!cleaned_data$head %in% sp_entries_vec, ]
+
+Final_cytb_alignment <- cleaned_data 
+#Check details
+nchar(cleaned_data$sequence)
+class(cleaned_data)
+dim(cleaned_data)
+names(cleaned_data)
+df_unique <- cleaned_data %>%
+  distinct(head, .keep_all = TRUE)
+
+cleaned_data <- df_unique
+
+# Remove dashes from the sequence column
+df_clean <- cleaned_data %>%
+  mutate(sequence = gsub("-", "", sequence))
+cleaned_data <- df_clean
+#Write a fasta file from final alignmnet
+# Convert sequences to DNAStringSet object
+sequences <- DNAStringSet(cleaned_data$sequence)
+
+# Assign names to the sequences
+names(sequences) <- cleaned_data$head
+# Write the DNA sequences to a FASTA file
+writeXStringSet(sequences, file = "NewCytB_new.fasta")
+
+# Perform alignment with structures
+aligned_seqs <- AlignSeqs(DNAStringSet(sequences))
+
+# write the alignment to a new FASTA file
+writeXStringSet(aligned_seqs,
+                file="NewCytB_new.fasta")
