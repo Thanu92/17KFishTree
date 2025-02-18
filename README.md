@@ -2,9 +2,12 @@
 
 This contains all data files, scripts, pipeline documentation, supplementary files of the manuscript "Unlocking the Evolutionary Relationships of 17,407 Ray-finned Fish Species: A Nested Tree Building Approach"
 
-----Re-usable nested-tree-pipeline----
+Re-usable nested-tree-pipeline-------
+
 Phylogenetic Tree Construction Pipeline
+
 Overview
+
 This pipeline guides the preparation of datasets and the construction of a phylogenetic tree using a nested approach. It involves the following steps:
 1.	Dataset Preparation: Generate genome, multi-gene, and placement sequence datasets using R scripts.
 2.	Genome Tree Construction: Build a genome-based phylogenetic tree using RAxML-NG, IQ-TREE, or any preferred tree-building tool.
